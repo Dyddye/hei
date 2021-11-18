@@ -52,6 +52,9 @@ For more information, please refer to <http://unlicense.org>
 #		if !defined(S_ISREG) && defined(S_IFMT) && defined(S_IFREG)
 #			define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
 #		endif
+#		if !defined(S_ISDIR) && defined(S_IFMT) && defined(S_IFDIR)
+#			define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
+#		endif
 #	endif
 #else
 #   if defined( __APPLE__ )
@@ -545,6 +548,74 @@ static void _plScanLocalDirectory( const PLFileSystemMount* mount, FSScanInstanc
 	}
 #else
 	// TODO: Win32 implementation
+	WIN32_FIND_DATA data;
+	size_t path_len = strlen( path );
+	// use "path\*" for files in folder
+	char fullpath[ MAX_PATH ];
+	strncpy( fullpath, path, path_len );
+	fullpath[ path_len ] = '\\';
+	fullpath[ path_len + 1 ] = '*';
+	fullpath[ path_len + 2 ] = 0;
+
+
+	HANDLE hFind = FindFirstFile( fullpath, &data );
+
+	if ( hFind != INVALID_HANDLE_VALUE ) {
+		while ( FindNextFile( hFind, &data ) ) {
+			if ( strcmp( data.cFileName, "." ) == 0 || strcmp( data.cFileName, ".." ) == 0 ) {
+				continue;
+			}
+
+			char filestring[ PL_SYSTEM_MAX_PATH + 1 ];
+			snprintf( filestring, sizeof( filestring ), "%s/%s", path, data.cFileName );
+
+			struct stat st;
+			if ( stat( filestring, &st ) == 0 ) {
+				if ( S_ISREG( st.st_mode ) ) {
+					if ( extension == NULL || pl_strcasecmp( plGetFileExtension( data.cFileName ), extension ) == 0 ) {
+						if ( mount == NULL ) {
+							Function( filestring, userData );
+							continue;
+						}
+
+						size_t pos = strlen( mount->path );
+						if ( pos >= sizeof( filestring ) ) {
+							PrintWarning( "pos >= %d!\n", pos );
+							continue;
+						}
+						const char *filePath = &filestring[ pos ];
+
+						// Ensure it's not already in the list
+						FSScanInstance *cur = *fileList;
+						while ( cur != NULL ) {
+							if ( strcmp( filePath, cur->path ) == 0 ) {
+								// File was already passed back
+								break;
+							}
+
+							cur = cur->next;
+						}
+
+						// Jumped the list early, so abort here
+						if ( cur != NULL ) {
+							continue;
+						}
+
+						Function( filePath, userData );
+
+						// Tack it onto the list
+						cur = pl_calloc( 1, sizeof( FSScanInstance ) );
+						strncpy( cur->path, filePath, sizeof( cur->path ) );
+						cur->next = *fileList;
+						*fileList = cur;
+					}
+				} else if ( S_ISDIR( st.st_mode ) && recursive ) {
+					_plScanLocalDirectory( mount, fileList, filestring, extension, Function, recursive, userData );
+				}
+			}
+		}
+		FindClose( hFind );
+	}
 #endif
 }
 
@@ -656,7 +727,7 @@ bool plFileExists( const char* path ) {
 bool plLocalPathExists( const char* path ) {
 #if defined(_MSC_VER)
 	DWORD fa = GetFileAttributes(path);
-	if (fa & FILE_ATTRIBUTE_DIRECTORY) {
+	if (fa != (DWORD)FILE_INVALID_FILE_ID && fa & FILE_ATTRIBUTE_DIRECTORY) {
 		return true;
 	}
 #else

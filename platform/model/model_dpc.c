@@ -35,8 +35,7 @@ For more information, please refer to <http://unlicense.org>
 
 // OutWars Model Format
 
-typedef struct __attribute((packed)) DpcHeader {
+PL_PACKED_STRUCT_START( DpcHeader )
   char identity[4]; // DCPM
   uint32_t version; // always 67
-
-} DpcHeader;
+PL_PACKED_STRUCT_END( DpcHeader )

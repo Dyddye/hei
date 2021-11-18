@@ -274,11 +274,11 @@ PL_INLINE static const char *plPrintColour(PLColour c) {
 
 #endif
 
-#define PLColourRGB(r, g, b) (PLColour){r  , g  , b  , 255}
-#define PLColourR(r)         (PLColour){r  , 255, 255, 255}
-#define PLColourG(g)         (PLColour){255, g  , 255, 255}
-#define PLColourB(b)         (PLColour){255, 255, b  , 255}
-#define PLColourA(a)         (PLColour){255, 255, 255, a  }
+#define PLColourRGB(r, g, b) PLColour(r  , g  , b  , 255)
+#define PLColourR(r)         PLColour(r  , 255, 255, 255)
+#define PLColourG(g)         PLColour(255, g  , 255, 255)
+#define PLColourB(b)         PLColour(255, 255, b  , 255)
+#define PLColourA(a)         PLColour(255, 255, 255, a  )
 
 /* pinks */
 #define PL_COLOUR_PINK                      PLColourRGB(255, 192, 203)
@@ -460,16 +460,19 @@ PL_INLINE static PLRectangle2D plCreateRectangle(
         PLColour ul, PLColour ur,
         PLColour ll, PLColour lr
 ) {
-    return (PLRectangle2D){
+    PLRectangle2D rect2d = {
             xy, wh,
             ul, ur,
             ll, lr
     };
+	return rect2d;
 }
 
 PL_INLINE static void plClearRectangle(PLRectangle2D *r) {
-    r->xy = r->wh = (PLVector2){0, 0};
-    r->ul = r->ur = r->ll = r->lr = (PLColour){0, 0, 0, 0};
+    PLVector2 vec2d = { 0, 0 };
+    r->xy = r->wh = vec2d;
+    PLColour colour = { 0, 0, 0, 0 };
+    r->ul = r->ur = r->ll = r->lr = colour;
 }
 
 PL_INLINE static void plSetRectangleUniformColour(PLRectangle2D *r, PLColour colour) {

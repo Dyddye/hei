@@ -75,7 +75,7 @@ static SMDNode *SMD_ReadNodes( PLFile *file, unsigned int *numNodes ) {
 	}
 
 	/* now set us back to the start of the list */
-	plFileSeek( file, pos, PL_SEEK_SET );
+	plFileSeek( file, (long)pos, PL_SEEK_SET );
 
 	/* allocate our nodes list */
 	SMDNode *nodes = pl_malloc( *numNodes * sizeof( SMDNode ) );
@@ -91,6 +91,9 @@ static SMDNode *SMD_ReadNodes( PLFile *file, unsigned int *numNodes ) {
 
 		curNode++;
 	}
+
+	// TODO: return
+	return NULL;
 }
 
 static PLModel *SMD_ReadFile( PLFile *file ) {
@@ -114,6 +117,8 @@ static PLModel *SMD_ReadFile( PLFile *file ) {
 		ReportError( PL_RESULT_FILEREAD, "failed to read in nodes" );
 		return NULL;
 	}
+	// TODO: return
+	return NULL;
 }
 
 /**
